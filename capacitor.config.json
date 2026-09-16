@@ -1,0 +1,12 @@
+{
+  "appId": "com.ferrego.minegocio3",
+  "appName": "Mi Negocio 3.0",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}
