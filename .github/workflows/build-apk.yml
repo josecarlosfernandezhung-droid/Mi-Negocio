@@ -1,0 +1,39 @@
+name: Build MypiCuadre APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Preparar proyecto Android (Capacitor)
+        run: |
+          npx cap add android || true
+          npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Compilar APK debug (sin firmar)
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Subir APK como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: mypicuadre-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
