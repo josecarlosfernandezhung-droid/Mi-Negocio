@@ -21,7 +21,12 @@ jobs:
       - name: Preparar proyecto Android (Capacitor)
         run: |
           npx cap add android || true
-          npx cap sync android
+
+      - name: Generar iconos y splash screen
+        run: npx @capacitor/assets generate --android
+
+      - name: Sincronizar Capacitor
+        run: npx cap sync android
 
       - uses: actions/setup-java@v4
         with:
