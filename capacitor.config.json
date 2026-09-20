@@ -1,12 +1,6 @@
 {
-  "appId": "com.ferrego.minegocio3",
-  "appName": "Mi Negocio 3.0",
+  "appId": "com.tototools.mypicuadre",
+  "appName": "MypiCuadre",
   "webDir": "www",
-  "bundledWebRuntime": false,
-  "android": {
-    "allowMixedContent": false
-  },
-  "server": {
-    "androidScheme": "https"
-  }
+  "bundledWebRuntime": false
 }
