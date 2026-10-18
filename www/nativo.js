@@ -62,7 +62,8 @@
   // Enlaces externos (WhatsApp): abrir en el navegador del sistema
   var open0 = window.open;
   window.open = function (url) {
-    if (/^https?:/i.test(url || '')) { call('Browser', 'open', { url: url }); return null; }
+    // wa.me etc.: se entrega a Android, que abre la app (WhatsApp) directo, sin cargar una página web
+    if (/^https?:/i.test(url || '')) { window.location.assign(url); return null; }
     return open0.apply(window, arguments);
   };
 })();
