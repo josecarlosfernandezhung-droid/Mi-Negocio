@@ -1,4 +1,4 @@
-name: Build MypiCuadre APK
+name: Build Gestión Negocio APK
 
 on:
   workflow_dispatch:
@@ -22,6 +22,12 @@ jobs:
         run: |
           npx cap add android || true
 
+      - name: Permitir conexión HTTP a la red local (servidor de pedidos)
+        run: |
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q usesCleartextTraffic "$M" || sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$M"
+          grep -n "usesCleartextTraffic" "$M"
+
       - name: Generar iconos y splash screen
         run: npx @capacitor/assets generate --android
 
@@ -40,5 +46,5 @@ jobs:
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: mypicuadre-debug-apk
+          name: gestion-negocio-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
