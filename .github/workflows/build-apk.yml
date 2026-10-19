@@ -39,7 +39,12 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Compilar APK debug (sin firmar)
+      - name: Usar la firma fija de la app (así se actualiza sin desinstalar)
+        run: |
+          mkdir -p ~/.android
+          cp firma/debug.keystore ~/.android/debug.keystore
+
+      - name: Compilar APK (firmado con la clave fija)
         working-directory: android
         run: ./gradlew assembleDebug
 
