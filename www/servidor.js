@@ -114,6 +114,10 @@
     return '';
   }
 
+  /* ---------- estado de la venta (solo con conexión): cobrado / pendiente de pago ---------- */
+  var pickEstado = 'cobrado', intent = null, lastPend = false;
+  function conectado() { var c = cfg(); return !!(c.url && c.vendedor && c.enviar !== false && ui.online === true); }
+
   /* ---------- venta de la app -> pedido del servidor ---------- */
   function r2(n) { return Math.round((Number(n) + Number.EPSILON) * 100) / 100; }
   function payloadDe(venta, prods, c) {
@@ -141,7 +145,16 @@
       hora: venta.createdAt,
       nota: 'Venta de Gestión Negocio' + (venta.table ? ' · mesa ' + venta.table : '')
     };
-    if (trans <= 0.004) { d.metodoPago = 'Efectivo'; d.montoRecibido = r2(total); d.cambio = 0; }
+    var meta = venta.srv || null;
+    if (meta && meta.estado === 'pendiente') {
+      // La caja de la PC la cobra: el servidor aplica el x2 si es transferencia
+      d.estado = 'pendiente'; d.metodoPago = meta.metodo === 'Transferencia' ? 'Transferencia' : 'Efectivo';
+      d.montoRecibido = null; d.cambio = null;
+    } else if (meta && meta.x2 && venta.paymentMethod === 'transfer') {
+      var recibido = Number(venta.transferAmount) || 0;
+      if (venta.transferCurrency && venta.rate) recibido = recibido * Number(venta.rate);
+      d.metodoPago = 'Transferencia'; d.montoRecibido = r2(recibido); d.cambio = 0;
+    } else if (trans <= 0.004) { d.metodoPago = 'Efectivo'; d.montoRecibido = r2(total); d.cambio = 0; }
     else { d.metodoPago = 'Combinado'; d.pagoEfectivo = efec; d.pagoTransferencia = r2(trans); d.montoRecibido = r2(total); d.cambio = 0; }
     return d;
   }
@@ -394,5 +407,31 @@
     );
   }
   window.__SrvCard = SrvCard;
-  window.__GNsync = { ciclo: ciclo, payloadDe: payloadDe, cfg: cfg, estado: estado, ui: ui };
+  // Selector "Cobrado / Pendiente de pago": solo aparece (y solo vale) con el servidor conectado.
+  function SrvPick() {
+    var R = window.__GN && window.__GN.React; if (!R) return null;
+    var _t = R.useState(0), setTick = _t[1];
+    R.useEffect(function () { var f = function () { setTick(function (x) { return x + 1; }); }; oyentes.push(f); return function () { var i = oyentes.indexOf(f); if (i >= 0) oyentes.splice(i, 1); }; }, []);
+    if (!conectado()) return null;
+    var h = R.createElement;
+    function tab(txt, val) { return h('button', { className: 'tab ' + (pickEstado === val ? 'is-active' : ''), onClick: function () { pickEstado = val; avisar(); } }, txt); }
+    return h('div', { style: { margin: '8px 0' } },
+      h('p', { className: 'muted', style: { margin: '0 0 4px', fontSize: '0.85em' } }, 'Estado en el servidor (transferencia = precio x2)'),
+      h('div', { className: 'tabs' }, tab('Cobrado', 'cobrado'), tab('Pendiente de pago', 'pendiente')),
+      pickEstado === 'pendiente' && h('p', { className: 'muted', style: { fontSize: '0.85em' } }, 'La venta se envía a la PC y la caja la cobra. No hace falta poner montos aquí.'));
+  }
+  window.__SrvPick = SrvPick;
+  window.__GNsync = { sub: function (fn) { oyentes.push(fn); return function () { var i = oyentes.indexOf(fn); if (i >= 0) oyentes.splice(i, 1); }; },
+    conectado: conectado, pend: function () { return conectado() && pickEstado === 'pendiente'; },
+    x2: function (esTransfer) { return !!esTransfer && conectado(); },
+    setIntent: function (m) { intent = m; },
+    takeMeta: function (metodo) {
+      var m = intent || metodo; intent = null;
+      if (!conectado()) { lastPend = false; return null; }
+      var meta = { estado: pickEstado, x2: m === 'transfer', metodo: m === 'transfer' ? 'Transferencia' : 'Efectivo' };
+      lastPend = (pickEstado === 'pendiente'); pickEstado = 'cobrado'; setTimeout(avisar, 0);
+      return meta;
+    },
+    get lastPend() { return lastPend; },
+    ciclo: ciclo, payloadDe: payloadDe, cfg: cfg, estado: estado, ui: ui };
 })();
